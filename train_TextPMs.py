@@ -154,7 +154,7 @@ def main():
         print("dataset name is not correct")
 
     train_loader = data.DataLoader(trainset, batch_size=cfg.batch_size,
-                                   shuffle=True, num_workers=cfg.num_workers, pin_memory=True)
+                                   shuffle=True, num_workers=cfg.num_workers, pin_memory=True, generator=torch.Generator(device='cuda'))
 
     log_dir = os.path.join(cfg.log_dir, datetime.now().strftime('%b%d_%H-%M-%S_') + cfg.exp_name)
     logger = LogSummary(log_dir)
