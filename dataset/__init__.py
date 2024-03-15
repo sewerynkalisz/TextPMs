@@ -6,3 +6,4 @@ from .Icdar15_Text import Icdar15Text
 from .Icdar17_Text import Mlt2017Text
 from .TD500_Text import TD500Text
 from .deploy import DeployDataset
+from .custom_text import CustomText

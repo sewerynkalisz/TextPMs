@@ -9,7 +9,7 @@ import torch.backends.cudnn as cudnn
 import torch.utils.data as data
 from torch.optim import lr_scheduler
 
-from dataset import SynthText, TotalText, Ctw1500Text, Icdar15Text, Mlt2017Text, TD500Text
+from dataset import SynthText, TotalText, Ctw1500Text, Icdar15Text, Mlt2017Text, TD500Text, CustomText
 from network.loss import TextLoss
 from network.textnet import TextNet
 from util.augmentation import Augmentation
@@ -50,10 +50,12 @@ def load_model(model, model_path):
     model.load_state_dict(state_dict['model'])
 
 
-def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=None):
+def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=None, valset=None):
 
     global train_step
+    global vtrain_step
     losses = AverageMeter()
+    vlosses = AverageMeter()
     model.train()
     # scheduler.step()
 
@@ -87,10 +89,26 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=No
                 'loss': loss.item(),
             }, tag='train', n_iter=train_step)
 
-    if epoch % cfg.save_freq == 0:
-        save_model(model, epoch, scheduler.get_lr(), optimizer)
+    
+    if valset:
+        with torch.no_grad():
+            for i, (img, train_mask, tr_mask) in enumerate(valset):
+                vtrain_step += 1
+                img, train_mask, tr_mask = to_device(img, train_mask, tr_mask)
+                output, _, _ = model(img)
+                vloss = criterion(output, train_mask, tr_mask)
+                vlosses.update(vloss.item())
+                gc.collect()
 
-    print('Training Loss: {}'.format(losses.avg))
+                if i % cfg.log_freq == 0:
+                    logger.write_scalars({
+                        'Validation': vloss.item(),
+                    }, tag='val', n_iter=vtrain_step)
+            if epoch % cfg.save_freq == 0:
+                save_model(model, epoch, scheduler.get_lr(), optimizer)
+
+    #print(f'Training Loss: {losses.avg}. Validation Loss: {vloss.avg}.')
+    print(f'Training Loss: {losses.avg}.')
 
 
 def main():
@@ -133,7 +151,12 @@ def main():
             is_training=True,
             transform=Augmentation(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
         )
-        valset = None
+        valset=None
+        #valset = Icdar15Text(
+        #    data_root='data/Icdar2015',
+        #    is_training=False,
+        #    transform=Augmentation(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
+        #)
     elif cfg.exp_name == 'MLT2017':
         trainset = Mlt2017Text(
             data_root='data/MLT2017',
@@ -149,12 +172,24 @@ def main():
             transform=Augmentation(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
         )
         valset = None
+    elif cfg.exp_name == 'CUSTOM':
+        trainset = CustomText(
+            data_root='data/final_dataset',
+            split_file='train.parquet',
+            is_training=True,
+            transform=Augmentation(size=cfg.input_size, mean=cfg.means, std=cfg.stds)
+        )
+        valset = None
 
     else:
         print("dataset name is not correct")
 
     train_loader = data.DataLoader(trainset, batch_size=cfg.batch_size,
                                    shuffle=True, num_workers=cfg.num_workers, pin_memory=True, generator=torch.Generator(device='cuda'))
+    
+    
+    #valset = data.DataLoader(valset, batch_size=cfg.batch_size,
+    #                               shuffle=True, num_workers=cfg.num_workers, pin_memory=True, generator=torch.Generator(device='cuda'))
 
     log_dir = os.path.join(cfg.log_dir, datetime.now().strftime('%b%d_%H-%M-%S_') + cfg.exp_name)
     logger = LogSummary(log_dir)
@@ -188,7 +223,7 @@ def main():
     print('Start training TextPMs.')
     for epoch in range(cfg.start_epoch, cfg.start_epoch + cfg.max_epoch+1):
         scheduler.step()
-        train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=logger)
+        train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=logger, valset=valset)
 
     print('End.')
 

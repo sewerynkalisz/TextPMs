@@ -3,6 +3,6 @@ import numpy as np
 
 
 def pil_load_img(path):
-    image = Image.open(path)
+    image = Image.open(path).convert('RGB')
     image = np.array(image)
     return image
