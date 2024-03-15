@@ -88,6 +88,9 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=No
             logger.write_scalars({
                 'loss': loss.item(),
             }, tag='train', n_iter=train_step)
+        
+        if epoch % cfg.save_freq == 0:
+            save_model(model, epoch, scheduler.get_lr(), optimizer)
 
     
     if valset:
@@ -104,8 +107,7 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=No
                     logger.write_scalars({
                         'Validation': vloss.item(),
                     }, tag='val', n_iter=vtrain_step)
-            if epoch % cfg.save_freq == 0:
-                save_model(model, epoch, scheduler.get_lr(), optimizer)
+
 
     #print(f'Training Loss: {losses.avg}. Validation Loss: {vloss.avg}.')
     print(f'Training Loss: {losses.avg}.')
