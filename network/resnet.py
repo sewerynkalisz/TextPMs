@@ -15,7 +15,9 @@ class ResNet(nn.Module):
         super().__init__()
 
         if name == "resnet50":
-            base_net = resnet.resnet50(pretrained=False)
+            print('Stard downloading model')
+            base_net = resnet.resnet50(pretrained=False, progress = True)
+            print('End downloading')
         elif name == "resnet101":
             base_net = resnet.resnet101(pretrained=False)
         else:
@@ -23,7 +25,7 @@ class ResNet(nn.Module):
 
         if pretrain:
             print("load the {} weight from ./cache".format(name))
-            base_net.load_state_dict(model_zoo.load_url(model_urls["resnet50"], model_dir="./cache"))
+            base_net.load_state_dict(model_zoo.load_url(model_urls["resnet50"], model_dir="./cache",  map_location=lambda storage, loc: storage.cuda()))
         # print(base_net)
         self.stage1 = nn.Sequential(
             base_net.conv1,

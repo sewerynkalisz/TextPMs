@@ -7,6 +7,8 @@ import numpy as np
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.utils.data as data
+from torch.nn.parallel import DistributedDataParallel as DDP
+
 from torch.optim import lr_scheduler
 
 from dataset import SynthText, TotalText, Ctw1500Text, Icdar15Text, Mlt2017Text, TD500Text, CustomText
@@ -50,12 +52,10 @@ def load_model(model, model_path):
     model.load_state_dict(state_dict['model'])
 
 
-def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=None, valset=None):
+def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=None):
 
     global train_step
-    global vtrain_step
     losses = AverageMeter()
-    vlosses = AverageMeter()
     model.train()
     # scheduler.step()
 
@@ -63,7 +63,8 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=No
     for i, (img, train_mask, tr_mask) in enumerate(train_loader):
         train_step += 1
         img, train_mask, tr_mask = to_device(img, train_mask, tr_mask)
-        output, _, _ = model(img)
+        #output, _, _ = model(img)
+        output = model(img)
         loss = criterion(output, train_mask, tr_mask)
         # backward
         try:
@@ -88,29 +89,11 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=No
             logger.write_scalars({
                 'loss': loss.item(),
             }, tag='train', n_iter=train_step)
-        
-        if epoch % cfg.save_freq == 0:
-            save_model(model, epoch, scheduler.get_lr(), optimizer)
 
-    
-    if valset:
-        with torch.no_grad():
-            for i, (img, train_mask, tr_mask) in enumerate(valset):
-                vtrain_step += 1
-                img, train_mask, tr_mask = to_device(img, train_mask, tr_mask)
-                output, _, _ = model(img)
-                vloss = criterion(output, train_mask, tr_mask)
-                vlosses.update(vloss.item())
-                gc.collect()
+    if epoch % cfg.save_freq == 0:
+        save_model(model, epoch, scheduler.get_lr(), optimizer)
 
-                if i % cfg.log_freq == 0:
-                    logger.write_scalars({
-                        'Validation': vloss.item(),
-                    }, tag='val', n_iter=vtrain_step)
-
-
-    #print(f'Training Loss: {losses.avg}. Validation Loss: {vloss.avg}.')
-    print(f'Training Loss: {losses.avg}.')
+    print('Training Loss: {}'.format(losses.avg))
 
 
 def main():
@@ -186,8 +169,13 @@ def main():
     else:
         print("dataset name is not correct")
 
-    train_loader = data.DataLoader(trainset, batch_size=cfg.batch_size,
-                                   shuffle=True, num_workers=cfg.num_workers, pin_memory=True, generator=torch.Generator(device='cuda'))
+    #device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    train_loader = data.DataLoader(trainset, 
+                                   batch_size=cfg.batch_size,
+                                   shuffle=True, 
+                                   num_workers=cfg.num_workers, 
+                                   pin_memory=True, 
+                                   generator=torch.Generator(device='cuda'))
     
     
     #valset = data.DataLoader(valset, batch_size=cfg.batch_size,
@@ -198,10 +186,14 @@ def main():
 
     # Model
     model = TextNet(backbone=cfg.net, is_training=True)
-    if cfg.mgpu:
-        model = nn.DataParallel(model)
+    if cfg.mgpu and torch.cuda.device_count() > 1:
+        print("Let's use", torch.cuda.device_count(), "GPUs!")
+        model = nn.DataParallel(model).cuda()
+    else:
+        model = model.cuda()
 
-    model = model.to(cfg.device)
+    #model = model.to(cfg.device)
+
     if cfg.cuda:
         cudnn.benchmark = True
 
@@ -225,7 +217,7 @@ def main():
     print('Start training TextPMs.')
     for epoch in range(cfg.start_epoch, cfg.start_epoch + cfg.max_epoch+1):
         scheduler.step()
-        train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=logger, valset=valset)
+        train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=logger)
 
     print('End.')
 
@@ -242,7 +234,6 @@ if __name__ == "__main__":
 
     update_config(cfg, args)
     print_config(cfg)
-
     # main
     main()
 

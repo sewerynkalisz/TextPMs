@@ -96,7 +96,7 @@ class BaseOptions(object):
 
         # Parse options
         self.args = self.parse(fixed)
-        os.environ['CUDA_VISIBLE_DEVICES'] = self.args.gpu
+        #os.environ['CUDA_VISIBLE_DEVICES'] = self.args.gpu
 
         # Setting default torch Tensor type
         if self.args.cuda and torch.cuda.is_available():

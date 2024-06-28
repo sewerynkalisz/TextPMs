@@ -1,2 +1,2 @@
 cd ../
-CUDA_LAUNCH_BLOCKING=1  nohup python3 train_TextPMs.py --exp_name CUSTOM --net resnet50 --optim SGD --lr 0.01 --input_size 640 --batch_size 16 --gpu 0 --max_epoch 300 --num_workers 12 > custom_train.out &
+CUDA_LAUNCH_BLOCKING=1  nohup python3 train_TextPMs.py --exp_name CUSTOM --net resnet50 --optim SGD --lr 0.01 --input_size 640 --batch_size 16 --gpu 0 --max_epoch 300 --num_workers 16 --save_freq 4 --viz > custom_train.out &
