@@ -35,7 +35,7 @@ def save_model(model, epoch, lr, optimzer):
     if not os.path.exists(save_dir):
         mkdirs(save_dir)
 
-    save_path = os.path.join(save_dir, 'TextPMs_{}_{}.pth'.format(model.backbone_name, epoch))
+    save_path = os.path.join(save_dir, 'TextPMs_{}_{}.pth'.format(cfg.net, epoch))
     print('Saving to {}.'.format(save_path))
     state_dict = {
         'lr': lr,
