@@ -191,8 +191,7 @@ def main():
         model = nn.DataParallel(model).cuda()
     else:
         model = model.cuda()
-
-    #model = model.to(cfg.device)
+        model = model.to(cfg.device)
 
     if cfg.cuda:
         cudnn.benchmark = True
