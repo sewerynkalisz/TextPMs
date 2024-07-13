@@ -7,9 +7,9 @@ ENV \
     NVIDIA_VISIBLE_DEVICES=all
 
 RUN apt-get -yqq update \
-    && pip install pip --upgrade 
+    && pip install pip --upgrade
 
-RUN apt-get update && apt-get -y install gcc g++ libgl1-mesa-glx libglib2.0-0 libsm6 libxrender1 libxext6 build-essential
+RUN apt-get update && apt-get -y install gcc g++ libgl1-mesa-glx libglib2.0-0 libsm6 libxrender1 libxext6 build-essential zip
 
 
 COPY requirement.txt /tmp/

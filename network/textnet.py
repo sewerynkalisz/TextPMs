@@ -121,8 +121,8 @@ class TextNet(nn.Module):
         end = time.time()
         up1, up2, up3, up4, up5 = self.fpn(x)
         b_time = time.time()-end
-        #end = time.time() ## NOT USE IN MGPU!!
+        end = time.time() ## NOT USE IN MGPU!!
         predict_out = self.rrgn(up1)
-        #iter_time = time.time()-end ## NOT USE IN MGPU!!
+        iter_time = time.time()-end ## NOT USE IN MGPU!!
         
-        return predict_out #, b_time, iter_time
+        return predict_out, b_time, iter_time

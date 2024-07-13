@@ -63,8 +63,8 @@ def train(model, train_loader, criterion, scheduler, optimizer, epoch, logger=No
     for i, (img, train_mask, tr_mask) in enumerate(train_loader):
         train_step += 1
         img, train_mask, tr_mask = to_device(img, train_mask, tr_mask)
-        #output, _, _ = model(img)
-        output = model(img)
+        output, _, _ = model(img)
+        #output = model(img) # TODO: MULTIDEVICE
         loss = criterion(output, train_mask, tr_mask)
         # backward
         try:

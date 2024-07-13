@@ -190,10 +190,14 @@ if __name__ == "__main__":
 
     update_config(cfg, args)
     print_config(cfg)
-
     vis_dir = os.path.join(cfg.vis_dir, '{}_test'.format(cfg.exp_name))
-
     if not os.path.exists(vis_dir):
         mkdirs(vis_dir)
-    # main
-    main(vis_dir)
+    for epoch in range(500,610,10):
+        cfg.checkepoch = epoch
+        print(f"Start epoch: {epoch}")
+        for threshold in np.arange(0.25, 0.75, 0.05):
+            print(f"Threshold: {threshold}")
+            cfg.threshold = round(threshold, 2)
+            # main
+            main(vis_dir)
