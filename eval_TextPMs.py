@@ -193,11 +193,12 @@ if __name__ == "__main__":
     vis_dir = os.path.join(cfg.vis_dir, '{}_test'.format(cfg.exp_name))
     if not os.path.exists(vis_dir):
         mkdirs(vis_dir)
-    for epoch in range(500,610,10):
+    for epoch in range(590,610,10):
         cfg.checkepoch = epoch
-        print(f"Start epoch: {epoch}")
-        for threshold in np.arange(0.25, 0.75, 0.05):
-            print(f"Threshold: {threshold}")
-            cfg.threshold = round(threshold, 2)
-            # main
-            main(vis_dir)
+        for score_i in np.arange(0.65, 0.85, 0.01):
+            cfg.score_i = round(score_i, 2)
+            for threshold in np.arange(0.25, 0.5, 0.01):
+                cfg.threshold = round(threshold, 2)
+                print(f"Epoch: {epoch} Score_i: {cfg.score_i} Threshold: {cfg.threshold}")
+                # main
+                main(vis_dir)
